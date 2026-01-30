@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Flight Price Report</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        h2 { text-align: center; margin-top: 40px; }
+        table { border-collapse: collapse; width: 90%; margin: 20px auto; }
+        th, td { border: 1px solid #ccc; padding: 8px; text-align: center; }
+        th { background-color: #f0f0f0; }
+        tr:nth-child(even) { background-color: #fafafa; }
+    </style>
+</head>
+<body>
+    <h1 style="text-align:center;">Flight Prices Report</h1>
+
+    <!-- Flights Table -->
+    <h2>Flights</h2>
+    <table>
+        <tr>
+            {% if flights %}
+                {% for col in flights[0].keys() %}
+                    {% if not col in ['price', 'currency', 'currencyCode', 'currencySymbol', 'timestamp'] %}
+                        <th>{{ col }}</th>
+                    {% endif %}
+                {% endfor %}
+            {% endif %}
+        </tr>
+        {% for flight in flights %}
+            <tr>
+                {% for col, value in flight.items() %}
+                    {% if not col in ['price', 'currency', 'currencyCode', 'currencySymbol', 'timestamp'] %}
+                        <td>{{ value }}</td>
+                    {% endif %}
+                {% endfor %}
+            </tr>
+        {% endfor %}
+    </table>
+
+    <!-- Prices Table -->
+    <h2>Prices</h2>
+    <table>
+        <tr>
+            {% if prices %}
+                {% for col in prices[0].keys() %}
+                    {% if col in ['flight_id', 'price', 'currency', 'currencyCode', 'currencySymbol', 'timestamp'] %}
+                        <th>{{ col }}</th>
+                    {% endif %}
+                {% endfor %}
+            {% endif %}
+        </tr>
+        {% for price in prices %}
+            <tr>
+                {% for col, value in price.items() %}
+                    {% if col in ['flight_id', 'price', 'currency', 'currencyCode', 'currencySymbol', 'timestamp'] %}
+                        <td>{{ value }}</td>
+                    {% endif %}
+                {% endfor %}
+            </tr>
+        {% endfor %}
+    </table>
+
+</body>
+</html>
