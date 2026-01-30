@@ -1,8 +1,13 @@
+import os
 import sqlite3
 from datetime import datetime
 
 
-def connect_db(db_path="data/flights.db"):
+# Get the path relative to this file (db.py)
+BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+DB_PATH = os.path.join(BASE_DIR, "data", "flights.db")
+
+def connect_db(db_path=DB_PATH):
     conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
     # create flights tables if not exist
