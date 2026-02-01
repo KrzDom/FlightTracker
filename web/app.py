@@ -9,7 +9,104 @@ DB_PATH = os.path.join(BASE_DIR, "data", "flights.db")
 os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
 
 
-def fetch_last_entries(limit=5):
+import sqlite3
+
+def get_all_flights_with_latest_price():
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+
+    # 1️⃣ Get all flights
+    cursor.execute("""
+        SELECT id, flight_number, departureAirport_cityName, arrivalAirport_cityName, departureDate
+        FROM flights
+    """)
+    flights_rows = cursor.fetchall()
+
+    # 2️⃣ Build nested dictionary
+    flights_dict = {}
+
+    for flight in flights_rows:
+        flight_id = flight["id"]
+
+        # 3️⃣ Get latest price for this flight using the timestamp
+        cursor.execute("""
+            SELECT price
+            FROM prices
+            WHERE flight_id = ?
+            ORDER BY timestamp DESC
+            LIMIT 1
+        """, (flight_id,))
+        price_row = cursor.fetchone()
+        latest_price = price_row["price"] if price_row else None
+
+        # Build dictionary entry
+        flights_dict[flight_id] = {
+            "flight_number": flight["flight_number"],
+            "departureAirport_cityName": flight["departureAirport_cityName"],
+            "arrivalAirport_cityName": flight["arrivalAirport_cityName"],
+            "departureDate": flight["departureDate"],
+            "latest_price": latest_price
+        }
+
+    conn.close()
+    return flights_dict
+
+
+
+def get_statistics():
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+
+    # Most expensive flight
+    cursor.execute("SELECT * FROM prices ORDER BY price DESC LIMIT 1")
+    expensive_flight = cursor.fetchone()
+    price_expensive_flight = expensive_flight["price"] if expensive_flight else 0
+
+    # Cheapest flight
+    cursor.execute("SELECT * FROM prices ORDER BY price ASC LIMIT 1")
+    cheapest_flight = cursor.fetchone()
+    price_cheapest_flight = cheapest_flight["price"] if cheapest_flight else 0
+
+    # Total number of flights
+    cursor.execute("SELECT COUNT(*) AS total_flights FROM flights")
+    row = cursor.fetchone()
+    total_flights = row["total_flights"] if row else 0
+
+    # Average price of Price
+    cursor.execute("SELECT AVG(price) AS avg_price FROM prices")
+    row = cursor.fetchone()
+    average_price = round(row["avg_price"], 2) if row and row["avg_price"] is not None else 0
+
+    # Close the connection
+    conn.close()
+
+    # Combine everything in a dictionary
+    statistics_dict = {
+        "cheapest_flight": price_cheapest_flight,
+        "expensive_flight": price_expensive_flight,
+        "total_flights": total_flights,
+        "average_price": average_price
+    }
+
+    return statistics_dict
+
+
+def fetch_all_entries():
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT * FROM flights " \
+    "ORDER BY departureDate DESC")
+
+    flights_rows = cursor.fetchall()
+    flights = [dict(row) for row in flights_rows]
+    return flights
+
+
+def fetch_last_entries(limit=15):
     """Fetch last `limit` entries from flights and prices separately."""
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
@@ -43,6 +140,13 @@ def fetch_last_entries(limit=5):
 def report():
     flights, prices = fetch_last_entries(limit=5)
     return render_template("report.html", flights=flights, prices=prices)
+
+
+@app.route("/")
+def home():
+    statistics_dict = get_statistics()
+    flights_dict = get_all_flights_with_latest_price()
+    return render_template("home.html", stats=statistics_dict, flights=flights_dict)
 
 
 if __name__ == "__main__":

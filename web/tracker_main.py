@@ -10,7 +10,7 @@ from tracker_utilitis import get_flight, parse_response, check_flight_exists
 origin = "VLC"
 destination = "BER"
 dict = {}
-days_to_track = 6
+days_to_track = 180
 
 for n in range(days_to_track):
     departure_date = datetime.today() + timedelta(days=n)
@@ -22,6 +22,7 @@ for n in range(days_to_track):
     # wait_time = random.randint(1, 3)
     # print(f"Waiting {wait_time}s to avoid API blocking...")
     time.sleep(2)
+    print(f"{n}/{days_to_track}")
 
 conn = connect_db()
 save_flights(conn, dict)
