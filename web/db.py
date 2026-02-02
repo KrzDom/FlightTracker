@@ -90,6 +90,7 @@ def connect_db(db_path=DB_PATH):
         currencyCode TEXT,
         currencySymbol TEXT,
         days_before_departure INTEGER,
+        request_dow INTEGER,
                    
         PRIMARY KEY(flight_id, query_date),
         FOREIGN KEY(flight_id) REFERENCES flights(id)
@@ -102,6 +103,7 @@ def connect_db(db_path=DB_PATH):
 def save_flights(conn, all_flights):
     cursor = conn.cursor()
     now = datetime.now().isoformat()
+    request_dow = datetime.now().weekday()
 
     for flight_id, info in all_flights.items():
 
@@ -169,9 +171,10 @@ def save_flights(conn, all_flights):
                 price,
                 currencyCode,
                 currencySymbol,
-                days_before_departure 
+                days_before_departure,
+                request_dow
             )
-            VALUES (?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
         """, (
             flight_id,
             now,
@@ -179,6 +182,7 @@ def save_flights(conn, all_flights):
             info.get("currencyCode"),
             info.get("currencySymbol"),
             info.get("days_before_departure"),
+            request_dow
         ))
 
     conn.commit()
