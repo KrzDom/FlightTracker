@@ -1,8 +1,8 @@
 import time
-import random
+import requests
 from datetime import datetime, timedelta
 
-from db import connect_db, save_flights
+from db import connect_db, connect_db_raw, save_flights, save_raw_data
 from tracker_utilitis import get_flight, parse_response, check_flight_exists
 
 
@@ -10,19 +10,28 @@ from tracker_utilitis import get_flight, parse_response, check_flight_exists
 origin = "VLC"
 destination = "BER"
 dict = {}
-days_to_track = 180
+days_to_track = 5
 
-for n in range(days_to_track):
-    departure_date = datetime.today() + timedelta(days=n)
-    departure_date_str = departure_date.strftime("%Y-%m-%d")
+try:
+    for n in range(days_to_track):
+        departure_date = datetime.today() + timedelta(days=n)
+        departure_date_str = departure_date.strftime("%Y-%m-%d")
 
-    data = get_flight(origin, destination, departure_date_str)
-    if check_flight_exists(data):
-        dict.update(parse_response(data))
-    # wait_time = random.randint(1, 3)
-    # print(f"Waiting {wait_time}s to avoid API blocking...")
-    time.sleep(2)
-    print(f"{n}/{days_to_track}")
+        data = get_flight(origin, destination, departure_date_str)
+        conn = connect_db_raw()
+        if check_flight_exists(data):
+            save_raw_data(conn, data, origin, destination, departure_date_str)
+            dict.update(parse_response(data))        
+        time.sleep(2)
 
-conn = connect_db()
-save_flights(conn, dict)
+    conn = connect_db()
+    save_flights(conn, dict)
+
+    requests.post("https://ntfy.sh/Krzysztof_is_doing_1234",
+    data="Tracker susccesful".encode(encoding='utf-8'))
+    
+except Exception as e:
+    requests.post("https://ntfy.sh/Krzysztof_is_doing_1234",
+    data="Tracker unsusccesful".encode(encoding='utf-8'))
+    raise
+

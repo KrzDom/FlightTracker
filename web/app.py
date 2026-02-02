@@ -9,8 +9,6 @@ DB_PATH = os.path.join(BASE_DIR, "data", "flights.db")
 os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
 
 
-import sqlite3
-
 def get_all_flights_with_latest_price():
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
@@ -31,14 +29,15 @@ def get_all_flights_with_latest_price():
 
         # 3️⃣ Get latest price for this flight using the timestamp
         cursor.execute("""
-            SELECT price
+            SELECT price, days_before_departure
             FROM prices
             WHERE flight_id = ?
-            ORDER BY timestamp DESC
+            ORDER BY query_date DESC
             LIMIT 1
         """, (flight_id,))
         price_row = cursor.fetchone()
         latest_price = price_row["price"] if price_row else None
+        days_before_departure = price_row["days_before_departure"] if price_row else None
 
         # Build dictionary entry
         flights_dict[flight_id] = {
@@ -46,7 +45,8 @@ def get_all_flights_with_latest_price():
             "departureAirport_cityName": flight["departureAirport_cityName"],
             "arrivalAirport_cityName": flight["arrivalAirport_cityName"],
             "departureDate": flight["departureDate"],
-            "latest_price": latest_price
+            "latest_price": latest_price,
+            "days_before_departure": days_before_departure
         }
 
     conn.close()
@@ -73,6 +73,11 @@ def get_statistics():
     cursor.execute("SELECT COUNT(*) AS total_flights FROM flights")
     row = cursor.fetchone()
     total_flights = row["total_flights"] if row else 0
+    
+    # Total number of prices
+    cursor.execute("SELECT COUNT(*) AS total_prices FROM prices")
+    row = cursor.fetchone()
+    total_prices = row["total_prices"] if row else 0
 
     # Average price of Price
     cursor.execute("SELECT AVG(price) AS avg_price FROM prices")
@@ -87,7 +92,8 @@ def get_statistics():
         "cheapest_flight": price_cheapest_flight,
         "expensive_flight": price_expensive_flight,
         "total_flights": total_flights,
-        "average_price": average_price
+        "average_price": average_price,
+        "total_prices": total_prices
     }
 
     return statistics_dict
@@ -126,7 +132,7 @@ def fetch_last_entries(limit=15):
     cursor.execute(f"""
         SELECT *
         FROM prices
-        ORDER BY timestamp DESC
+        ORDER BY query_date DESC
         LIMIT ?
     """, (limit,))
     prices_rows = cursor.fetchall()

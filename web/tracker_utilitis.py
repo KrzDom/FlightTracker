@@ -1,7 +1,6 @@
-import json
-import sqlite3
 import requests
-from datetime import datetime, timedelta
+import holidays
+from datetime import datetime, timedelta, date
 
 
 def check_flight_exists(data):
@@ -35,8 +34,8 @@ def parse_response(data):
     arrival_city = arrival_airport.get("city", {})
 
     flight_number = outbound.get("flightNumber")
-    departure_date = outbound.get("departureDate")
-    arrival_date = outbound.get("arrivalDate")
+    departure = outbound.get("departureDate")
+    arrival = outbound.get("arrivalDate")
 
     origin_iata = departure_airport.get("iataCode")
     arrival_iata = arrival_airport.get("iataCode")
@@ -46,16 +45,26 @@ def parse_response(data):
     currency_symbol = price_info.get("currencySymbol")
 
     # create a human-readable unique ID
-    departure_safe = departure_date.replace(":", "").replace("-", "") if departure_date else "unknown"
+    departure_safe = departure.replace(":", "").replace("-", "") if departure else "unknown"
     flight_id = f"{flight_number}_{departure_safe}_{origin_iata}_{arrival_iata}"
+
+    departure_date = datetime.fromisoformat(departure.replace("Z", "")).date()
+    today = date.today()
+    days_before_departure = (departure_date - today).days
+
+    departure_dow = departure_date.weekday()
+    is_weekend = 1 if departure_dow >= 5 else 0
+    week_of_year = departure_date.isocalendar()[1]
+    month = departure_date.month
+    year = departure_date.year
+
+    de_holidays = holidays.DE(years=year)
+    is_holiday = 1 if departure_date in de_holidays else 0
 
     return {
         flight_id: {
             # ---- flights table ----
             "flight_number": flight_number,
-
-            "departure": departure_date,
-            "arrival": arrival_iata,
 
             "departureAirport_countryName": departure_airport.get("countryName"),
             "departureAirport_cityName": departure_city.get("name"),
@@ -69,17 +78,24 @@ def parse_response(data):
             "arrivalAirport_macCode": arrival_city.get("macCode"),
             "arrivalAirport_seoName": arrival_airport.get("seoName"),
 
-            "departureDate": departure_date,
-            "arrivalDate": arrival_date,
+            "departureDate": departure,
+            "arrivalDate": arrival,
+
+            "departure_dow": departure_dow,
+            "is_weekend": is_weekend,
+            "week_of_year": week_of_year,
+            "month": month,
+            "year": year,
+            "is_holiday": is_holiday,
 
             # ---- prices table ----
             "price": price_value,
             "currency": currency_code,
             "currencyCode": currency_code,
             "currencySymbol": currency_symbol,
+            "days_before_departure": days_before_departure 
         }
     }
-
 
 
 def get_flight(origin, destination, departure_date):
