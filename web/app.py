@@ -144,7 +144,7 @@ def fetch_last_entries(limit=15):
 
 @app.route("/report")
 def report():
-    flights, prices = fetch_last_entries(limit=5)
+    flights, prices = fetch_last_entries(limit=500)
     return render_template("report.html", flights=flights, prices=prices)
 
 
