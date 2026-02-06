@@ -14,7 +14,7 @@ days_to_track = 250
 
 try:
     for n in range(days_to_track):
-        print(F"{n}/{days_to_track}")
+        # print(F"{n}/{days_to_track}")
         departure_date = datetime.today() + timedelta(days=n)
         departure_date_str = departure_date.strftime("%Y-%m-%d")
 
