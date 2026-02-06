@@ -12,13 +12,20 @@ DB_PATH = os.path.join(BASE_DIR, "data", "flights.db")
 DB_PATH_RAW = os.path.join(BASE_DIR, "data", "raw_data.db")
 
 
+def get_current_time_slot():
+    now = datetime.now().hour
+    time_slot = (now - 23) % 24 // 4
+    return time_slot
+
+
 def compress_json(data: dict) -> bytes:
     raw = json.dumps(data).encode("utf-8")
     return gzip.compress(raw)
 
 
 def hash_json(data: dict, timestamp) -> str:
-    raw = json.dumps({"data": data, "timestamp": timestamp}, sort_keys=True).encode("utf-8")
+    raw = json.dumps({"data": data, "timestamp": timestamp},
+                     sort_keys=True).encode("utf-8")
     return hashlib.sha256(raw).hexdigest()
 
 
@@ -30,13 +37,13 @@ def connect_db_raw(db_path_raw=DB_PATH_RAW):
     CREATE TABLE IF NOT EXISTS raw_api_responses (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
 
-        query_date TEXT NOT NULL,        
+        query_date TEXT NOT NULL,
         origin TEXT NOT NULL,
         destination TEXT NOT NULL,
         departure_date TEXT NOT NULL,
 
-        response_gzip BLOB NOT NULL,           
-        response_hash TEXT NOT NULL            
+        response_gzip BLOB NOT NULL,
+        response_hash TEXT NOT NULL
         )
     """)
 
@@ -71,8 +78,9 @@ def connect_db(db_path=DB_PATH):
         arrivalAirport_seoName TEXT,
 
         departureDate TEXT,
+        departure_time_slot INTEGER,
         arrivalDate TEXT,
-        
+
         departure_dow INTEGER,
         is_weekend INTEGER,
         week_of_year INTEGER,
@@ -85,13 +93,14 @@ def connect_db(db_path=DB_PATH):
     CREATE TABLE IF NOT EXISTS prices (
         flight_id TEXT,
         query_date TEXT,
-                                      
+
         price REAL,
         currencyCode TEXT,
         currencySymbol TEXT,
         days_before_departure INTEGER,
-        request_dow INTEGER,
-                   
+        query_dow INTEGER,
+        query_time_slot INTEGER,
+
         PRIMARY KEY(flight_id, query_date),
         FOREIGN KEY(flight_id) REFERENCES flights(id)
         )
@@ -103,10 +112,10 @@ def connect_db(db_path=DB_PATH):
 def save_flights(conn, all_flights):
     cursor = conn.cursor()
     now = datetime.now().isoformat()
-    request_dow = datetime.now().weekday()
+    query_dow = datetime.now().weekday() 
+    query_time_slot = get_current_time_slot()
 
     for flight_id, info in all_flights.items():
-
         # -------- insert into flights table --------
         cursor.execute("""
             INSERT OR IGNORE INTO flights (
@@ -126,8 +135,9 @@ def save_flights(conn, all_flights):
                 arrivalAirport_seoName,
 
                 departureDate,
+                departure_time_slot,
                 arrivalDate,
-                       
+
                 departure_dow,
                 is_weekend,
                 week_of_year,
@@ -135,7 +145,7 @@ def save_flights(conn, all_flights):
                 year,
                 is_holiday
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, (
             flight_id,
             info.get("flight_number"),
@@ -153,6 +163,7 @@ def save_flights(conn, all_flights):
             info.get("arrivalAirport_seoName"),
 
             info.get("departureDate"),
+            info.get("departure_time_slot"),
             info.get("arrivalDate"),
 
             info.get("departure_dow"),
@@ -172,9 +183,10 @@ def save_flights(conn, all_flights):
                 currencyCode,
                 currencySymbol,
                 days_before_departure,
-                request_dow
+                query_dow,
+                query_time_slot
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         """, (
             flight_id,
             now,
@@ -182,7 +194,8 @@ def save_flights(conn, all_flights):
             info.get("currencyCode"),
             info.get("currencySymbol"),
             info.get("days_before_departure"),
-            request_dow
+            query_dow,
+            query_time_slot
         ))
 
     conn.commit()

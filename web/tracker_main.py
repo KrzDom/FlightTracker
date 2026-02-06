@@ -10,10 +10,11 @@ from tracker_utilitis import get_flight, parse_response, check_flight_exists
 origin = "VLC"
 destination = "BER"
 dict = {}
-days_to_track = 5
+days_to_track = 250
 
 try:
     for n in range(days_to_track):
+        print(F"{n}/{days_to_track}")
         departure_date = datetime.today() + timedelta(days=n)
         departure_date_str = departure_date.strftime("%Y-%m-%d")
 
@@ -21,17 +22,16 @@ try:
         conn = connect_db_raw()
         if check_flight_exists(data):
             save_raw_data(conn, data, origin, destination, departure_date_str)
-            dict.update(parse_response(data))        
+            dict.update(parse_response(data))
         time.sleep(2)
 
     conn = connect_db()
     save_flights(conn, dict)
 
     requests.post("https://ntfy.sh/Krzysztof_is_doing_1234",
-    data="Tracker susccesful".encode(encoding='utf-8'))
-    
+                  data="Tracker susccesful".encode(encoding='utf-8'))
+
 except Exception as e:
     requests.post("https://ntfy.sh/Krzysztof_is_doing_1234",
-    data="Tracker unsusccesful".encode(encoding='utf-8'))
+                  data="Tracker unsusccesful".encode(encoding='utf-8'))
     raise
-

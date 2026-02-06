@@ -1,6 +1,6 @@
 import requests
 import holidays
-from datetime import datetime, timedelta, date
+from datetime import datetime, date
 
 
 def check_flight_exists(data):
@@ -45,8 +45,14 @@ def parse_response(data):
     currency_symbol = price_info.get("currencySymbol")
 
     # create a human-readable unique ID
-    departure_safe = departure.replace(":", "").replace("-", "") if departure else "unknown"
-    flight_id = f"{flight_number}_{departure_safe}_{origin_iata}_{arrival_iata}"
+    departure_safe = departure.replace(":", "").replace("-", "") \
+        if departure else "unknown"
+    flight_id = f"{flight_number}_{departure_safe} \
+    _{origin_iata}_{arrival_iata}"
+
+    departure_dt_obj = datetime.fromisoformat(departure)
+    departure_hour = departure_dt_obj.hour
+    departure_time_slot = (departure_hour - 23) % 24 // 4
 
     departure_date = datetime.fromisoformat(departure.replace("Z", "")).date()
     today = date.today()
@@ -79,6 +85,7 @@ def parse_response(data):
             "arrivalAirport_seoName": arrival_airport.get("seoName"),
 
             "departureDate": departure,
+            "departure_time_slot": departure_time_slot,
             "arrivalDate": arrival,
 
             "departure_dow": departure_dow,
@@ -93,7 +100,7 @@ def parse_response(data):
             "currency": currency_code,
             "currencyCode": currency_code,
             "currencySymbol": currency_symbol,
-            "days_before_departure": days_before_departure 
+            "days_before_departure": days_before_departure
         }
     }
 
