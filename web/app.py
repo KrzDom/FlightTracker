@@ -1,5 +1,6 @@
 from flask import Flask, render_template
 import plotly.express as px
+import plotly.graph_objects as go
 import os
 
 from app_utilities import (
@@ -7,7 +8,8 @@ from app_utilities import (
     get_statistics,
     fetch_last_entries,
     fetch_avg_price_dbd,
-    fetch_pricing_matrices)
+    fetch_pricing_matrices,
+    fetch_price_development_by_dow)
 
 app = Flask(__name__)
 
@@ -105,8 +107,52 @@ def all_flights():
 
 @app.route("/visual")
 def visual():
-    a = 1
-    return render_template("visual.html", a=a)
+    # Fetch your data for days before departure
+    df_price_dev = fetch_price_development_by_dow()  # must have columns: day_of_week, days_before_departure, avg_price
+
+    day_names = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+
+    # Create the figure
+    fig = go.Figure()
+
+    for dow in range(7):
+        subset = df_price_dev[df_price_dev["day_of_week"] == dow].sort_values("days_before_departure")
+        subset = subset.dropna(subset=["days_before_departure", "avg_price"])  # skip rows with missing data
+        if subset.empty:
+            continue
+
+        fig.add_trace(
+            go.Scatter(
+                x=subset["days_before_departure"],
+                y=subset["avg_price"],
+                mode="lines+markers",
+                name=day_names[dow]
+            )
+        )
+
+    # Layout
+    fig.update_layout(
+        title="Flight Price Development by Departure Weekday",
+        xaxis_title="Days before departure",
+        yaxis_title="Average flight price",
+        legend_title="Departure weekday",
+        template="plotly_white",
+        autosize=True,
+        height=600,
+        margin=dict(l=50, r=50, t=60, b=50)
+    )
+    fig.update_xaxes(autorange="reversed")  # booking horizon
+
+    # Convert to HTML fragment
+    plot_html = fig.to_html(full_html=False, include_plotlyjs=True)
+
+    # Optional stats for your stat-cards
+    
+    # Render your template
+    return render_template(
+        "visual.html",
+        plot_html=plot_html,  # only this plot
+    )
 
 
 if __name__ == "__main__":

@@ -266,3 +266,24 @@ def fetch_pricing_matrices():
 
     conn.close()
     return matrix_queries, matrix_flights
+
+
+def fetch_price_development_by_dow():
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+
+    query = """
+        SELECT
+            p.days_before_departure,
+            f.departure_dow AS day_of_week,
+            AVG(p.price) AS avg_price
+        FROM flights f
+        JOIN prices p ON f.id = p.flight_id
+        GROUP BY p.days_before_departure, f.departure_dow
+        ORDER BY p.days_before_departure
+    """
+
+    df = pd.read_sql(query, conn)
+    conn.close()
+
+    return df
