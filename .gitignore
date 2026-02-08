@@ -208,6 +208,7 @@ __marimo__/
 
 # Local project files
 data/flights.db
+data/raw_data.db
 latest_flights.html
 venv/
 .env
