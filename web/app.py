@@ -144,7 +144,7 @@ def visual():
     fig.update_xaxes(autorange="reversed")  # booking horizon
 
     # Convert to HTML fragment
-    plot_html = fig.to_html(full_html=False, include_plotlyjs=True)
+    plot_html = fig.to_html(full_html=False)
 
     # Optional stats for your stat-cards
     
