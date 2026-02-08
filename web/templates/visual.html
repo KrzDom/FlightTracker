@@ -2,8 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Flight Price Tracker – Visual</title>
-
+    <title>Flight Price Tracker</title>
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -16,12 +15,6 @@
             text-align: center;
             color: #1e3a8a;
             margin-bottom: 30px;
-        }
-
-        h3 {
-            text-align: center;
-            margin-top: 50px;
-            color: #1e3a8a;
         }
 
         /* Navigation Buttons */
@@ -84,7 +77,13 @@
             color: #555;
         }
 
-        /* Plot containers */
+        /* Plot sections */
+        h3 {
+            text-align: center;
+            margin-top: 50px;
+            color: #1e3a8a;
+        }
+
         .plot-container {
             margin: 30px auto;
             max-width: 900px;
@@ -93,23 +92,22 @@
             border-radius: 12px;
             box-shadow: 0 4px 12px rgba(0,0,0,0.08);
         }
-
         .plot-container-wide {
-            width: 100%;
-            max-width: 1200px;
-            margin: 30px auto;
+            width: 100%;           /* Full width */
+            max-width: 1800px;     /* Optional: prevent it from getting too wide on huge screens */
+            margin: 30px auto;     /* Center horizontally with margin top/bottom */
             padding: 20px;
             background: white;
             border-radius: 12px;
             box-shadow: 0 4px 12px rgba(0,0,0,0.08);
         }
+
     </style>
 </head>
 <body>
 
 <h1>Flight Price Tracker</h1>
 
-<div class="plot-container-wide" style="height:600px; width:100%;">
-    {{ plot_html | safe }} 
+<div class="plot-container-wide">
+    {{ plot_html | safe }}
 </div>
-
